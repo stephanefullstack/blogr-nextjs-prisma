@@ -1,26 +1,18 @@
-import NextAuth, { NextAuthOptions } from "next-auth";
-import GitHubProvider from "next-auth/providers/github";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import prisma from "../../../lib/prisma";
+// pages/api/auth/[...nextauth].ts
+import NextAuth from 'next-auth';
+import GitHubProvider from 'next-auth/providers/github'; // exemple
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-    }),
-  ],
-  // (optionnel) ajoute l'id dans la session pour connecter par id (plus robuste)
+export const authOptions = {
+  providers: [GitHubProvider({ clientId: process.env.GITHUB_ID!, clientSecret: process.env.GITHUB_SECRET! })],
+  session: { strategy: 'jwt' },
   callbacks: {
-    async session({ session, user }) {
-      if (session.user && user) {
-        (session.user as any).id = user.id;
+    async session({ session, token, user }) {
+      if (session.user) {
+        // garde l'id si tu veux filtrer par authorId ensuite
+        (session.user as any).id = token.sub ?? (user as any)?.id;
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
 };
-
 export default NextAuth(authOptions);
